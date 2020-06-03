@@ -1,0 +1,44 @@
+{% extends 'index.html' %}
+{% load staticfiles %}
+{% block content %}
+    <div class="content-box-large">
+        <div class="panel-heading">
+            <div class="panel-title">服务器列表</div>
+        </div>
+        <div class="panel-body">
+            <table cellpadding="0" cellspacing="0" border="0" class="table table-striped table-bordered" id="example">
+                <thead>
+                    <tr>
+                        <th>IP</th>
+                        <th>主机名</th>
+                        <th>操作系统</th>
+                        <th>操作系统版本</th>
+                        <th>服务器类型</th>
+                        <th>服务器状态</th>
+                        <th>是否已同步</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    {% for server in servers %}
+                        <tr class="odd gradeX">
+                            <td><a href="{% url 'serverdetail' server.pk %}">{{ server.ipaddr }}</a></td>
+                            <td>{{ server.hostname }}</td>
+                            <td>{{ server.os_platform }}</td>
+                            <td class="center">{{ server.os_version }}</td>
+                            <td class="center">{{ server.get_device_type_id_display }}</td>
+                            <td class="center">{{ server.get_device_status_id_display }}</td>
+                            <td class="center">{{ server.get_is_sync_display }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script src="{% static 'vendors/datatables/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendors/datatables/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/tables.js' %}"></script>
+{% endblock %}

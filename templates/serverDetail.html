@@ -1,0 +1,122 @@
+{% extends 'index.html' %}
+{% load staticfiles %}
+
+{% block head %}
+    <script src="{% static 'js/oldie.js' %}"></script>
+    <script src="{% static 'js/jquery-1.8.3.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="content-box-large">
+        <div class="panel-body">
+            <div>
+                <h4>服务器信息</h4>
+                <p>
+                    <table id="user" class="table table-bordered table-striped" style="clear: both">
+                        <tbody>
+                            <tr>
+                                <td width="10%">IP</td>
+                                <td width="40%">{{ server.ipaddr }}</td>
+                                <td width="10%">主机名</td>
+                                <td width="40%">{% if server.hostname %}
+                                    {{ server.hostname }}
+                                {% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td>服务器类型</td>
+                                <td>{{ server.get_device_type_id_display }}</td>
+                                <td>SN号</td>
+                                <td>{% if server.sn %}
+                                    {{ server.sn }}
+                                {% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td>服务器状态</td>
+                                <td>{{ server.get_device_status_id_display }}</td>
+                                <td>地区</td>
+                                <td>{{ server.area.name }}</td>
+                            </tr>
+                            <tr>
+                                <td>主机名</td>
+                                <td>Admin</td>
+                                <td>机房</td>
+                                <td>{% if server.idc %}
+                                    {{ server.idc }}
+                                {% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td>操作系统</td>
+                                <td>{% if server.os_platform %}
+                                    {{ server.os_platform }}
+                                {% endif %}</td>
+                                <td>机柜位置</td>
+                                <td>{% if server.cabinet %}
+                                    {{ server.cabinet }}
+                                {% endif %}</td>
+                            </tr>
+
+                            <tr>
+                                <td>操作系统版本</td>
+                                <td>{% if server.os_version %}
+                                    {{ server.os_version }}
+                                {% endif %}</td>
+                                <td>CPU个数</td>
+                                <td>{% if server.cpu_count %}
+                                    {{ server.cpu_count }}
+                                {% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td>制造商</td>
+                                <td>{% if server.manufacturer %}
+                                    {{ server.manufacturer }}
+                                {% endif %}</td>
+                                <td>CPU物理个数</td>
+                                <td>{% if server.cpu_physical_count %}
+                                    {{ server.cpu_physical_count }}
+                                {% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td>型号</td>
+                                <td>{% if server.model %}
+                                    {{ server.model }}
+                                {% endif %}</td>
+                                <td>CPU型号</td>
+                                <td>{% if server.cpu_model %}
+                                    {{ server.cpu_model }}
+                                {% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td>内存总量</td>
+                                <td>{% if server.mem_total %}
+                                    {{ server.mem_total }}
+                                {% endif %}</td>
+                                <td>业务系统</td>
+                                <td>{% if server.product %}
+                                    {{ server.product.name }}
+                                {% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td>标签</td>
+                                <td></td>
+                                <td>同步状态</td>
+                                <td>{{ server.get_is_sync_display }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </p>
+            </div>
+
+        </div>
+    </div>
+    <div class="content-box-large">
+        <div class="panel-body">
+            {{ linechart|safe }}
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script src="{% static 'vendors/datatables/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendors/datatables/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/tables.js' %}"></script>
+{% endblock %}

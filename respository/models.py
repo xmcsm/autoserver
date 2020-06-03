@@ -47,13 +47,17 @@ class Server(models.Model):
         (3, '离线'),
         (4, '下架'),
     )
+    device_sync_choices = (
+        (0, '未同步'),
+        (1, '已同步'),
+    )
     device_type_id = models.IntegerField('服务器类型',choices=device_type_choices,default=1)
     device_status_id = models.IntegerField('服务器状态', choices=device_status_choices, default=1)
 
     ipaddr = models.CharField('IP',max_length=128,unique=True)
-    hostname = models.CharField('主机名',max_length=128)
+    hostname = models.CharField('主机名',max_length=128,null=True,blank=True)
     os_platform = models.CharField('操作系统',max_length=32,null=True,blank=True)
-    os_version = models.CharField('保证系统版本',max_length=32,null=True,blank=True)
+    os_version = models.CharField('操作系统版本',max_length=32,null=True,blank=True)
     manufacturer = models.CharField('制造商',max_length=64,null=True,blank=True)
     model = models.CharField('型号',max_length=64,null=True,blank=True)
     sn = models.CharField('SN号',max_length=64,null=True,blank=True,db_index=True)
@@ -72,16 +76,16 @@ class Server(models.Model):
 
     tag = models.ManyToManyField('Tag',null=True,blank=True)
 
-    is_sync = models.BooleanField('已同步',default=False)
+    is_sync = models.IntegerField('同步状态', choices=device_sync_choices, default=0)
     class Meta:
         verbose_name_plural = '服务器表'
 
     def __str__(self):
-        return self.hostname
+        return self.ipaddr
 
 
 class Cpu(models.Model):
-    server = models.ForeignKey('Server',on_delete=models.CASCADE)
+    server = models.ForeignKey('Server',related_name='cpu',on_delete=models.CASCADE)
     percent_avg = models.CharField('平均使用率',max_length=50)
     percent_per = models.CharField('每个CPU使用率',max_length=50)
     create_time = models.DateTimeField(auto_now_add=True)
@@ -94,7 +98,7 @@ class Cpu(models.Model):
 
 
 class Mem(models.Model):
-    server = models.ForeignKey('Server', on_delete=models.CASCADE)
+    server = models.ForeignKey('Server',related_name='mem' ,on_delete=models.CASCADE)
     mem_total = models.CharField('总内存',max_length=50,null=True,blank=True)
     used = models.CharField('已使用内存',max_length=50,null=True,blank=True)
     free = models.CharField('空闲内存',max_length=50,null=True,blank=True)
@@ -162,12 +166,12 @@ class NetDetail(models.Model):
         verbose_name_plural = '网卡信息表'
 
     def __str__(self):
-        return self.net
+        return self.net.address
 
 class ErrorLog(models.Model):
     title = models.CharField(max_length=32)
     content = models.TextField()
-    server = models.ForeignKey('Server',null=True,blank=True, on_delete=models.CASCADE)
+    server = models.ForeignKey('Server',related_name='el',null=True,blank=True, on_delete=models.CASCADE)
     create_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -184,7 +188,7 @@ class ChangeLog(models.Model):
     create_time = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name_plural = '修改日志表'
+        verbose_name_plural = '资产变更表'
 
     def __str__(self):
         return '%s-%s' % (self.server.ipaddr,self.server.hostname)
