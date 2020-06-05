@@ -10,6 +10,7 @@ def hardwarehandle(res,server_obj):
     if status != 10000:
         models.ErrorLog.objects.create(content=res['Hardware']['data']['message'], server=server_obj,
                                        title='服务器同步失败')
+    print(res['Hardware']['data'].keys())
     if 'basic' in res['Hardware']['data'].keys():
         server_obj.os_platform = res['Hardware']['data']['basic']['os_platform']
         server_obj.os_version = res['Hardware']['data']['basic']['os_version']
@@ -18,10 +19,14 @@ def hardwarehandle(res,server_obj):
         server_obj.manufacturer = res['Hardware']['data']['board']['Manufacturer']
         server_obj.model = res['Hardware']['data']['board']['Product Name']
         server_obj.sn = res['Hardware']['data']['board']['Serial Number']
-    if 'board' in res['Hardware']['data'].keys():
+    if 'cpu' in res['Hardware']['data'].keys():
         server_obj.cpu_count = res['Hardware']['data']['cpu']['cpu_count']
         server_obj.cpu_physical_count = res['Hardware']['data']['cpu']['cpu_physical_count']
         server_obj.cpu_model = res['Hardware']['data']['cpu']['cpu_model']
+        print(res['Hardware']['data']['cpu']['cpu_physical_count'])
+        print(server_obj.cpu_physical_count)
+    if 'mem' in res['Hardware']['data'].keys():
+        server_obj.mem_total = res['Hardware']['data']['mem']
 
     server_obj.is_sync = True
     server_obj.save()
@@ -52,6 +57,20 @@ def memhandle(res,server_obj):
     mem.percent = res['Mem']['data']['percent']
     mem.save()
 
+# 分析交换分区数据
+def swaphandle(res,server_obj):
+    status = res['Swap']['status']
+    if status != 10000:
+        models.ErrorLog.objects.create(content=res['Swap']['data']['message'], server=server_obj, title='交换分区同步失败')
+
+    swap = models.Swap()
+    swap.server = server_obj
+    swap.total = res['Swap']['data']['total']
+    swap.used = res['Swap']['data']['used']
+    swap.free = res['Swap']['data']['free']
+    swap.percent = res['Swap']['data']['percent']
+    swap.save()
+
 # 分析磁盘数据
 def diskhandle(res,server_obj):
     status = res['Disk']['status']
@@ -73,8 +92,7 @@ def diskhandle(res,server_obj):
         for slot in add_slot:
             disk_res = new_disk_info[slot]
             disk_res['total'] = disk_res['used']['total']
-            print(disk_res)
-            tmp = '新增磁盘{device},挂载点{mountpoint},磁盘类型{fstype},容量{total}G'.format(**disk_res)
+            tmp = '[新增磁盘{device},挂载点{mountpoint},磁盘类型{fstype},容量{total}G]'.format(**disk_res)
             disk = add_disk(server_obj, disk_res)
             add_disk_detail(disk, disk_res['used'])
             record_list.append(tmp)
@@ -104,8 +122,9 @@ def diskhandle(res,server_obj):
                 if k == 'used':
                     continue
                 old_v = getattr(old_disk_row,k)
-                if new_v != old_v:
-                    tmp = '磁盘%s变更,%s由%s变成%s'.format(slot,k,old_v,new_v)
+
+                if str(new_v) != old_v:
+                    tmp = '[磁盘{0}变更,{1}由{2}变成{3}]'.format(slot,k,old_v,new_v)
                     record_list.append(tmp)
                     setattr(old_disk_row,k,new_v)
 
@@ -115,7 +134,6 @@ def diskhandle(res,server_obj):
 
 # 新增磁盘
 def add_disk(server_obj,disk_res):
-    print(disk_res)
     disk = models.Disk()
     disk.server = server_obj
     disk.device = disk_res['device']
@@ -147,7 +165,6 @@ def nethandle(res,server_obj):
     if '127.0.0.1' in new_net_info.keys():
         del new_net_info['127.0.0.1']
     new_net = list(new_net_info.keys())
-    print(new_net)
     old_net_info = models.Net.objects.filter(server=server_obj)
     old_net = []
     for obj in old_net_info:
@@ -159,9 +176,8 @@ def nethandle(res,server_obj):
         record_list = []
         for nic in add_nic:
             net_res = new_net_info[nic]
-            tmp = '新增网卡{name},类型{family},IP{address},子关掩码{netmask}'.format(**net_res)
-            net = add_net(server_obj, net_res)
-            add_net_detail(net,net_res)
+            tmp = '[新增网卡{name},类型{family},IP{address},子关掩码{netmask}]'.format(**net_res)
+            add_net(server_obj, net_res)
             record_list.append(tmp)
         models.ChangeLog.objects.create(content=';'.join(record_list), server=server_obj)
 
@@ -170,9 +186,7 @@ def nethandle(res,server_obj):
     if del_nic:
         record_list = []
         for nic in del_nic:
-            delete_net = models.Net.objects.filter(address=nic, server=server_obj).first()
-            models.NetDetail.objects.filter(net=delete_net).delete()
-            delete_net.delete()
+            delete_net = models.Net.objects.filter(address=nic, server=server_obj).first().delete()
             tmp = '删除网卡{0}'.format(nic)
             record_list.append(tmp)
         models.ChangeLog.objects.create(content=';'.join(record_list), server=server_obj)
@@ -182,14 +196,12 @@ def nethandle(res,server_obj):
         record_list = []
         for nic in up_nic:
             new_net_row = new_net_info[nic]
-
             old_net_row = models.Net.objects.filter(address=nic,server=server_obj).first()
-            add_net_detail(old_net_row,new_net_row)
             for k,new_v in new_net_row.items():
                 if getattr(old_net_row,k,False):
                     old_v = getattr(old_net_row,k)
-                    if new_v != old_v:
-                        tmp = '网卡%s变更,%s由%s变成%s'.format(nic,k,old_v,new_v)
+                    if str(new_v) != old_v:
+                        tmp = '[网卡{0}变更,{1}由{2}变成{3}]'.format(nic,k,old_v,new_v)
                         record_list.append(tmp)
                         setattr(old_net_row,k,new_v)
 
@@ -206,18 +218,13 @@ def add_net(server_obj,nic):
     net.address = nic['address']
     net.netmask = nic['netmask']
     net.broadcast = nic['broadcast']
+    net.bytes_sent = nic['bytes_sent']
+    net.bytes_recv = nic['bytes_recv']
+    net.packets_sent = nic['packets_sent']
+    net.packets_recv = nic['packets_recv']
     net.save()
     return net
 
-# 新增网卡使用信息
-def add_net_detail(net,nic):
-    netdetail = models.NetDetail()
-    netdetail.net = net
-    netdetail.bytes_sent = nic['bytes_sent']
-    netdetail.bytes_recv = nic['bytes_recv']
-    netdetail.packets_sent = nic['packets_sent']
-    netdetail.packets_recv = nic['packets_recv']
-    netdetail.save()
 
 
 @csrf_exempt
@@ -228,7 +235,7 @@ def asset(request):
     if not server_obj:
         return HttpResponse('资产未录入！')
     #### 同步服务器信息
-    if not server_obj.is_sync:
+    if server_obj.is_sync:
         if 'Hardware' in res.keys():
             hardwarehandle(res,server_obj)
 
@@ -243,6 +250,10 @@ def asset(request):
     # #### 分析内存数据
     if 'Mem' in res.keys():
         memhandle(res,server_obj)
+
+    # #### 分析交换分区数据
+    if 'Swap' in res.keys():
+        swaphandle(res, server_obj)
     #
     # #### 分析网卡数据
     if 'Net' in res.keys():

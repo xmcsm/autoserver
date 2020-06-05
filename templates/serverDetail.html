@@ -88,7 +88,7 @@
                             <tr>
                                 <td>内存总量</td>
                                 <td>{% if server.mem_total %}
-                                    {{ server.mem_total }}
+                                    {{ server.mem_total }}G
                                 {% endif %}</td>
                                 <td>业务系统</td>
                                 <td>{% if server.product %}
@@ -108,15 +108,127 @@
 
         </div>
     </div>
-    <div class="content-box-large">
-        <div class="panel-body">
-            {{ linechart|safe }}
+    {% if type == 'run' %}
+        <div class="content-box-large">
+            <div class="panel-heading">
+    {#            <div class="panel-title">Morris.js Stacked</div>#}
+                <div class="panel-options">
+                    <a href="javascript:getCpu()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="cpusyl">
+
+                </div>
+            </div>
         </div>
-    </div>
+        <div class="content-box-large">
+            <div class="panel-heading">
+    {#            <div class="panel-title">Morris.js Stacked</div>#}
+                <div class="panel-options">
+                    <a href="javascript:getMem()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="memsyl">
+
+                </div>
+            </div>
+        </div>
+        <div class="content-box-large">
+            <div class="panel-heading">
+    {#            <div class="panel-title">Morris.js Stacked</div>#}
+                <div class="panel-options">
+                    <a href="javascript:getSwap()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="swapsyl">
+
+                </div>
+            </div>
+        </div>
+        <div class="content-box-large">
+            <div class="panel-heading">
+    {#            <div class="panel-title">Morris.js Stacked</div>#}
+                <div class="panel-options">
+                    <a href="javascript:getDisk()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="divDisk">
+
+                </div>
+            </div>
+        </div>
+        <div class="content-box-large">
+            <div class="panel-heading">
+                <div class="panel-options">
+                    <a href="javascript:getNet()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div id="divNet">
+
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block script %}
     <script src="{% static 'vendors/datatables/js/jquery.dataTables.min.js' %}"></script>
     <script src="{% static 'vendors/datatables/dataTables.bootstrap.js' %}"></script>
     <script src="{% static 'js/tables.js' %}"></script>
+    <script>
+        {% if type == 'run' %}
+             function getCpu()
+             {
+                $.get('{% url 'getcpu' server.pk %}',function (data,status) {
+                    $('#cpusyl').html(data['data']);
+                });
+             }
+             function getMem()
+             {
+                $.get('{% url 'getmem' server.pk %}',function (data,status) {
+                    $('#memsyl').html(data['data']);
+                });
+             }
+             function getSwap()
+             {
+                $.get('{% url 'getswap' server.pk %}',function (data,status) {
+                    $('#swapsyl').html(data['data']);
+                });
+             }
+             function getDisk()
+             {
+                $.get('{% url 'getdisk' server.pk %}',function (data,status) {
+                    $('#divDisk').html(data['data']);
+                });
+             }
+             function getNet()
+             {
+                $.get('{% url 'getnet' server.pk %}',function (data,status) {
+
+                    $('#divNet').html(data['data']);
+                });
+             }
+
+            $(function(){
+                getCpu();
+                getMem();
+                getSwap();
+                getDisk();
+                getNet();// 第一次加载数据
+                // 开启定时任务，时间间隔为3000 ms。
+                setInterval(function(){
+                    getCpu();
+                    getMem();
+                    getSwap();
+                    getDisk();
+                    getNet();
+                }, 60000);
+            });
+        {% endif %}
+    </script>
 {% endblock %}

@@ -42,10 +42,8 @@ class Server(models.Model):
     )
 
     device_status_choices = (
-        (1, '上架'),
-        (2, '在线'),
-        (3, '离线'),
-        (4, '下架'),
+        (1, '在运'),
+        (2, '退运'),
     )
     device_sync_choices = (
         (0, '未同步'),
@@ -57,14 +55,14 @@ class Server(models.Model):
     ipaddr = models.CharField('IP',max_length=128,unique=True)
     hostname = models.CharField('主机名',max_length=128,null=True,blank=True)
     os_platform = models.CharField('操作系统',max_length=32,null=True,blank=True)
-    os_version = models.CharField('操作系统版本',max_length=32,null=True,blank=True)
-    manufacturer = models.CharField('制造商',max_length=64,null=True,blank=True)
-    model = models.CharField('型号',max_length=64,null=True,blank=True)
-    sn = models.CharField('SN号',max_length=64,null=True,blank=True,db_index=True)
+    os_version = models.CharField('操作系统版本',max_length=128,null=True,blank=True)
+    manufacturer = models.CharField('制造商',max_length=128,null=True,blank=True)
+    model = models.CharField('主板型号',max_length=128,null=True,blank=True)
+    sn = models.CharField('SN号',max_length=128,null=True,blank=True,db_index=True)
 
     area = models.ForeignKey('Area',verbose_name='地区',null=True,blank=True,on_delete=models.CASCADE)
-    idc = models.CharField('机房',max_length=50,null=True,blank=True)
-    cabinet = models.CharField('机柜位置',max_length=50,null=True,blank=True)
+    idc = models.CharField('机房',max_length=128,null=True,blank=True)
+    cabinet = models.CharField('机柜位置',max_length=128,null=True,blank=True)
 
     cpu_count = models.IntegerField('CPU个数',null=True,blank=True)
     cpu_physical_count = models.IntegerField('CPU物理个数',null=True,blank=True)
@@ -111,6 +109,20 @@ class Mem(models.Model):
     def __str__(self):
         return self.mem_total
 
+class Swap(models.Model):
+    server = models.ForeignKey('Server',related_name='swap',verbose_name='服务器' ,on_delete=models.CASCADE)
+    total = models.CharField('总Swap',max_length=50,null=True,blank=True)
+    used = models.CharField('已使用Swap',max_length=50,null=True,blank=True)
+    free = models.CharField('空闲Swap',max_length=50,null=True,blank=True)
+    percent = models.CharField('使用率',max_length=50,null=True,blank=True)
+    create_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = '交换分区表'
+
+    def __str__(self):
+        return self.total
+
 
 class Disk(models.Model):
     server = models.ForeignKey('Server', related_name='disk',on_delete=models.CASCADE)
@@ -147,26 +159,16 @@ class Net(models.Model):
     address = models.CharField('IP',max_length=50,null=True,blank=True)
     netmask = models.CharField('子关掩码',max_length=50,null=True,blank=True)
     broadcast = models.CharField('广播地址',max_length=50,null=True,blank=True)
+    bytes_sent = models.CharField('已发送字节',max_length=50,default=0)
+    bytes_recv = models.CharField('已接收字节',max_length=50,default=0)
+    packets_sent = models.CharField('已发送包',max_length=50,default=0)
+    packets_recv = models.CharField('已接收包',max_length=50,default=0)
 
     class Meta:
         verbose_name_plural = '网卡表'
 
     def __str__(self):
         return self.name
-
-class NetDetail(models.Model):
-    net = models.ForeignKey('Net', on_delete=models.CASCADE)
-    bytes_sent = models.CharField('已发送字节',max_length=50,null=True,blank=True)
-    bytes_recv = models.CharField('已接收字节',max_length=50,null=True,blank=True)
-    packets_sent = models.CharField('已发送包',max_length=50,null=True,blank=True)
-    packets_recv = models.CharField('已接收包',max_length=50,null=True,blank=True)
-    create_time = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = '网卡信息表'
-
-    def __str__(self):
-        return self.net.address
 
 class ErrorLog(models.Model):
     title = models.CharField(max_length=32)
@@ -184,7 +186,7 @@ class ErrorLog(models.Model):
 
 class ChangeLog(models.Model):
     content = models.TextField(null=True)
-    server = models.ForeignKey('Server', related_name='cl',on_delete=models.CASCADE)
+    server = models.ForeignKey('Server', related_name='cl',verbose_name='服务器',on_delete=models.CASCADE)
     create_time = models.DateTimeField(auto_now=True)
 
     class Meta:

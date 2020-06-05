@@ -15,6 +15,10 @@ class CpuAdmin(admin.ModelAdmin):
 class MemAdmin(admin.ModelAdmin):
     list_display = ('id','server','mem_total','used','free','percent','create_time')
 
+@admin.register(models.Swap)
+class SwapAdmin(admin.ModelAdmin):
+    list_display = ('id','server','total','used','free','percent','create_time')
+
 @admin.register(models.Disk)
 class DiskAdmin(admin.ModelAdmin):
     list_display = ('id','server','device','mountpoint','fstype','opts','total')
@@ -27,10 +31,6 @@ class DiskDetailAdmin(admin.ModelAdmin):
 class NetAdmin(admin.ModelAdmin):
     list_display = ('id','server','name','family','address','netmask','broadcast')
 
-@admin.register(models.NetDetail)
-class NetDetailAdmin(admin.ModelAdmin):
-    list_display = ('id','net','bytes_sent','bytes_recv','packets_sent','packets_recv','create_time')
-
 @admin.register(models.Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('id','name')
@@ -39,7 +39,11 @@ class ProductAdmin(admin.ModelAdmin):
 class AreaAdmin(admin.ModelAdmin):
     list_display = ('id','name')
 
-admin.site.register(models.ChangeLog)
+@admin.register(models.ChangeLog)
+class ChangeLogAdmin(admin.ModelAdmin):
+    list_display = ('id','server','content')
+
+
 admin.site.register(models.ErrorLog)
 
 admin.site.register(models.Tag)
