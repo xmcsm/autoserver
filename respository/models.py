@@ -57,7 +57,7 @@ class Server(models.Model):
     os_platform = models.CharField('操作系统',max_length=32,null=True,blank=True)
     os_version = models.CharField('操作系统版本',max_length=128,null=True,blank=True)
     manufacturer = models.CharField('制造商',max_length=128,null=True,blank=True)
-    model = models.CharField('主板型号',max_length=128,null=True,blank=True)
+    model = models.CharField('型号',max_length=128,null=True,blank=True)
     sn = models.CharField('SN号',max_length=128,null=True,blank=True,db_index=True)
 
     area = models.ForeignKey('Area',verbose_name='地区',null=True,blank=True,on_delete=models.CASCADE)

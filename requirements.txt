@@ -1,5 +1,10 @@
 Django==2.2.12
 django-suit2==2.0a1
+Jinja2==2.11.2
+MarkupSafe==1.1.1
 mysqlclient==1.4.6
+prettytable==0.7.2
+pyecharts==1.7.1
 pytz==2020.1
+simplejson==3.17.0
 sqlparse==0.3.1

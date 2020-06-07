@@ -235,7 +235,7 @@ def asset(request):
     if not server_obj:
         return HttpResponse('资产未录入！')
     #### 同步服务器信息
-    if server_obj.is_sync:
+    if not server_obj.is_sync:
         if 'Hardware' in res.keys():
             hardwarehandle(res,server_obj)
 

@@ -1,6 +1,6 @@
 from django.shortcuts import render,HttpResponse
 from django.http import JsonResponse
-import json
+import json,datetime
 from .charts import LineCharts,MutiplePieCharts,BarCharts
 from respository import models
 
@@ -31,9 +31,7 @@ def serverdetail(request,pk,type):
     return render(request,'serverDetail.html',context)
 
 def GetCpu(request,server_pk):
-    print(server_pk)
     cpus = models.Cpu.objects.filter(server_id=server_pk)
-    print(cpus)
     data = []
     cpudata = []
     for cpu in cpus:
@@ -47,6 +45,42 @@ def GetCpu(request,server_pk):
     data['status'] = 'SUCCESS'
     data['data'] = linechart
     return JsonResponse(data)
+
+import time
+def DateTimeToTimestamp(dt):
+    timestamp = int(time.mktime(dt.timetuple()))
+    return timestamp
+
+def get_time_stamp13(datetime_obj):
+
+    # 生成13时间戳   eg:1557842280000
+    datetime_str = datetime.datetime.strftime(datetime_obj, '%Y-%m-%d %H:%M:00')
+    datetime_obj = datetime.datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:00')
+    # 10位，时间点相当于从1.1开始的当年时间编号
+    date_stamp = str(int(time.mktime(datetime_obj.timetuple())))
+    # 3位，微秒
+    data_microsecond = str("%06d" % datetime_obj.microsecond)[0:3]
+    date_stamp = date_stamp + data_microsecond
+    return int(date_stamp)
+
+def stampToTime(stamp):
+    datatime = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(float(str(stamp)[0:10])))
+    datatime = datatime+'.'+str(stamp)[10:]
+    return datatime
+
+'''
+def GetCpuInfo(request,server_pk):
+    cpus = models.Cpu.objects.filter(server_id=server_pk)
+    data = []
+    cpudata = []
+    for cpu in cpus:
+        cpu_time = get_time_stamp13(cpu.create_time)
+        print(cpu_time)
+        cpudata.append([get_time_stamp13(cpu.create_time), float(cpu.percent_avg)])
+        print(stampToTime(cpu_time))
+    data.append(cpudata)
+    return HttpResponse(data,content_type="application/json,charset=utf-8")
+'''
 
 def GetMem(request,server_pk):
     data = []

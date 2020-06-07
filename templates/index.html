@@ -10,7 +10,7 @@
     <!-- styles -->
     <link href="{% static 'css/styles.css' %}" rel="stylesheet">
     <script src="{% static 'js/highcharts.js' %}"></script>
-    <script src="{% static 'js/exporting.js' %}"></script>
+{#    <script src="{% static 'js/exporting.js' %}"></script>#}
     <script src="{% static 'js/highcharts-zh_CN.js' %}"></script>
     {% block head %}
     {% endblock %}
@@ -84,6 +84,9 @@
                                                             },
                                                             showInLegend: true
                                                     }
+                                            },
+                                            credits:{
+                                                enabled: false // 禁用版权信息
                                             },
                                             series: [{
                                                     name: '数量',
