@@ -5,7 +5,7 @@ from pyecharts import options as opts
 from pyecharts.commons.utils import JsCode
 
 from pyecharts.globals import CurrentConfig
-CurrentConfig.ONLINE_HOST = "http://192.168.56.1:8000/static/js/"
+CurrentConfig.ONLINE_HOST = "http://112.126.56.201:8000/static/js/"
 
 
 def LineCharts(data):
