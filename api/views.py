@@ -10,7 +10,8 @@ def hardwarehandle(res,server_obj):
     if status != 10000:
         models.ErrorLog.objects.create(content=res['Hardware']['data']['message'], server=server_obj,
                                        title='服务器同步失败')
-    print(res['Hardware']['data'].keys())
+        return
+
     if 'basic' in res['Hardware']['data'].keys():
         server_obj.os_platform = res['Hardware']['data']['basic']['os_platform']
         server_obj.os_version = res['Hardware']['data']['basic']['os_version']
