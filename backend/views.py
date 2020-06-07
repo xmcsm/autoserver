@@ -12,6 +12,7 @@ def login(request):
 def server(request):
     context = {}
     servers = models.Server.objects.exclude(device_status_id=2)
+
     context['servers'] = servers
     return render(request,'server.html',context)
 
@@ -25,9 +26,28 @@ def serverdetail(request,pk,type):
     context = {}
     server = models.Server.objects.get(pk=pk)
     nets = models.Net.objects.filter(server_id=pk)
+    cpus = models.Cpu.objects.filter(server=server)
+    data = {}
+    cpu_data = []
+    for cpu in cpus:
+        cpu_data.append([get_time_stamp13(cpu.create_time),float(cpu.percent_avg)])
+    mem_data = []
+    mems = models.Mem.objects.filter(server=server)
+    for mem in mems:
+        mem_data.append([get_time_stamp13(mem.create_time),float(mem.percent)])
+
+    swap_data = []
+    swaps = models.Swap.objects.filter(server=server)
+    for swap in swaps:
+        swap_data.append([get_time_stamp13(swap.create_time), float(swap.percent)])
+
+    data['cpu_percent_avg'] = cpu_data
+    data['mem_percent_avg'] = mem_data
+    data['swap_percent_avg'] = swap_data
     context['server'] = server
     context['nets'] = nets
     context['type'] = type
+    context['targets'] = data
     return render(request,'serverDetail.html',context)
 
 def GetCpu(request,server_pk):

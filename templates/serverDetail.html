@@ -108,6 +108,7 @@
 
         </div>
     </div>
+    {{ cpus }}
     {% if type == 'run' %}
         <div class="content-box-large">
             <div class="panel-heading">
@@ -117,33 +118,7 @@
                 </div>
             </div>
             <div class="panel-body">
-                <div id="cpusyl">
-
-                </div>
-            </div>
-        </div>
-        <div class="content-box-large">
-            <div class="panel-heading">
-    {#            <div class="panel-title">Morris.js Stacked</div>#}
-                <div class="panel-options">
-                    <a href="javascript:getMem()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
-                </div>
-            </div>
-            <div class="panel-body">
-                <div id="memsyl">
-
-                </div>
-            </div>
-        </div>
-        <div class="content-box-large">
-            <div class="panel-heading">
-    {#            <div class="panel-title">Morris.js Stacked</div>#}
-                <div class="panel-options">
-                    <a href="javascript:getSwap()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
-                </div>
-            </div>
-            <div class="panel-body">
-                <div id="swapsyl">
+                <div id="cpucontainer">
 
                 </div>
             </div>
@@ -182,24 +157,6 @@
     <script src="{% static 'js/tables.js' %}"></script>
     <script>
         {% if type == 'run' %}
-             function getCpu()
-             {
-                $.get('{% url 'getcpu' server.pk %}',function (data,status) {
-                    $('#cpusyl').html(data['data']);
-                });
-             }
-             function getMem()
-             {
-                $.get('{% url 'getmem' server.pk %}',function (data,status) {
-                    $('#memsyl').html(data['data']);
-                });
-             }
-             function getSwap()
-             {
-                $.get('{% url 'getswap' server.pk %}',function (data,status) {
-                    $('#swapsyl').html(data['data']);
-                });
-             }
              function getDisk()
              {
                 $.get('{% url 'getdisk' server.pk %}',function (data,status) {
@@ -215,20 +172,98 @@
              }
 
             $(function(){
-                getCpu();
-                getMem();
-                getSwap();
-                getDisk();
-                getNet();// 第一次加载数据
+                //getDisk();
+                //getNet();// 第一次加载数据
                 // 开启定时任务，时间间隔为3000 ms。
                 /*setInterval(function(){
-                    getCpu();
-                    getMem();
-                    getSwap();
                     getDisk();
                     getNet();
                 }, 60000);*/
+                console.log(getLocalTime(1591055760000))
             });
+            function getLocalTime(nS) {
+               var date = new Date(nS);
+                Y = date.getFullYear() + '-';
+                M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
+                D = date.getDate() + ' ';
+                h = date.getHours() + ':';
+                m = date.getMinutes() + ':';
+                s = date.getSeconds();
+                return Y+M+D+h+m+s;
+            }
+            Highcharts.setOptions({
+                global: {
+                    // 时区调整，国内是 +8 时区
+                    timezoneOffset: -8 * 60
+                }
+            });
+             var chart = Highcharts.chart('cpucontainer', {
+            chart: {
+                zoomType: 'x'
+            },
+            legend: {
+                layout: 'horizontal',
+				align: 'center',
+            },
+            title: {
+                text: '操作系统基础指标',
+            },
+            subtitle: {
+                text: document.ontouchstart === undefined ?
+                '鼠标拖动可以进行缩放' : '手势操作进行缩放'
+            },
+            xAxis: {
+                type:'datetime',
+                //categories: {{ cpus.create_time }},
+                labels: {
+                    formatter: function () {
+                        return getLocalTime(this.value);
+                    }
+                }
+            },
+            yAxis:{
+                title: {
+                    text: null
+                },
+                labels: {
+                    formatter: function () {
+                        return this.value + "%";
+                    }
+                }
+            },
+            tooltip: {
+		        shared: true,
+                useHTML: true,
+                dateTimeLabelFormats: {
+                    day: '%Y-%m-%d %H:%M:%S',
+                    millisecond: '%Y-%m-%d %H:%M:%S',
+				    second: '%Y-%m-%d %H:%M:%S',
+                    minute: '%Y-%m-%d %H:%M:%S',
+				    hour: '%Y-%m-%d %H:%M:%S',
+                },
+                headerFormat: '<small>{point.key}</small><table>',
+                pointFormat: '<tr><td style="color: {series.color}">{series.name}: </td>' +
+                '<td style="text-align: right"><b>{point.y}%</b></td></tr>',
+                footerFormat: '</table>',
+            },
+            credits: {
+                enabled: false
+            },
+            series: [{
+                name: 'CPU使用率',
+                type:'area',
+                data: {{ targets.cpu_percent_avg }}
+            },{
+                name: '内存使用率',
+                type:'area',
+                data: {{ targets.mem_percent_avg }}
+            },{
+                name: 'Swap使用率',
+                type:'area',
+                data: {{ targets.swap_percent_avg }}
+            }]
+        });
+
         {% endif %}
     </script>
 {% endblock %}
