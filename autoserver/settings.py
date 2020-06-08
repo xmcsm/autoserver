@@ -139,3 +139,5 @@ STATIC_ROOT = os.path.join(BASE_DIR,'static_collected')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR,'static'),
 ]
+
+LOCAL_IP='112.126.56.201'

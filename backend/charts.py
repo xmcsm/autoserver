@@ -3,9 +3,9 @@
 from pyecharts.charts import Pie,Line,Bar
 from pyecharts import options as opts
 from pyecharts.commons.utils import JsCode
-
+from django.conf import settings
 from pyecharts.globals import CurrentConfig
-CurrentConfig.ONLINE_HOST = "http://192.168.56.1:8000/static/js/"
+CurrentConfig.ONLINE_HOST = "http://"+settings.LOCAL_IP+":8000/static/js/"
 
 
 def LineCharts(data):
