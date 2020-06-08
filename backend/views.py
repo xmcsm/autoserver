@@ -75,7 +75,7 @@ def serverdetail(request,pk,type):
         detail_list.append(['已使用', float('%.2f' % float(diskdetail.percent))])
         detail_list.append(['空闲', float('%.2f' % (100 - float(diskdetail.percent)))])
         center = [col_num+(interval_num*col),row_num+(interval_num*row)]
-        diskdata.append({'device':str(disk.device.replace('\\','/')),'center':center, 'detail_list':detail_list})
+        diskdata.append({'device':str(disk.mountpoint.replace('\\','/')),'center':center, 'detail_list':detail_list})
         if col == 2:
             col = 0
             row += 1
