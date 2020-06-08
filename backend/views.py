@@ -75,13 +75,13 @@ def serverdetail(request,pk,type):
         detail_list.append(['已使用', float('%.2f' % float(diskdetail.percent))])
         detail_list.append(['空闲', float('%.2f' % (100 - float(diskdetail.percent)))])
         center = [col_num+(interval_num*col),row_num+(interval_num*row)]
-        diskdata.append({'device':str(disk.mountpoint.replace('\\','/')),'center':center, 'detail_list':detail_list})
+        diskdata.append({'mountpoint':str(disk.mountpoint.replace('\\','/')),'center':center, 'detail_list':detail_list,'disk':diskdetail})
         if col == 2:
             col = 0
             row += 1
         else:
             col += 1
-    print(diskdata)
+
     context['server'] = server
     context['nets'] = nets
     context['type'] = type
@@ -92,18 +92,12 @@ def serverdetail(request,pk,type):
 
 def GetCpu(request,server_pk):
     cpus = models.Cpu.objects.filter(server_id=server_pk)
-    data = []
-    cpudata = []
+    cpu_data = []
     for cpu in cpus:
-        cpudata.append([cpu.create_time.strftime('%Y-%m-%d %H:%M:%S'), cpu.percent_avg])
-    data.append('CPU')
-    data.append(cpudata)
-
-    linechart = LineCharts(data)
-
+        cpu_data.append([get_time_stamp13(cpu.create_time), float(cpu.percent_avg)])
     data = {}
     data['status'] = 'SUCCESS'
-    data['data'] = linechart
+    data['data'] = cpu_data
     return JsonResponse(data)
 
 import time
@@ -114,8 +108,8 @@ def DateTimeToTimestamp(dt):
 def get_time_stamp13(datetime_obj):
 
     # 生成13时间戳   eg:1557842280000
-    datetime_str = datetime.datetime.strftime(datetime_obj, '%Y-%m-%d %H:%M:00')
-    datetime_obj = datetime.datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:00')
+    datetime_str = datetime.datetime.strftime(datetime_obj, '%Y-%m-%d %H:%M:%S')
+    datetime_obj = datetime.datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
     # 10位，时间点相当于从1.1开始的当年时间编号
     date_stamp = str(int(time.mktime(datetime_obj.timetuple())))
     # 3位，微秒
@@ -143,52 +137,31 @@ def GetCpuInfo(request,server_pk):
 '''
 
 def GetMem(request,server_pk):
-    data = []
-
     mems = models.Mem.objects.filter(server_id=server_pk)
-    memdata = []
+    mem_data = []
+
     for mem in mems:
-        memdata.append([mem.create_time.strftime('%Y-%m-%d %H:%M:%S'), mem.percent])
-
-    data.append('内存')
-    data.append(memdata)
-    linechart = LineCharts(data)
-
+        mem_data.append([get_time_stamp13(mem.create_time), float(mem.percent)])
     data = {}
     data['status'] = 'SUCCESS'
-    data['data'] = linechart
+    data['data'] = mem_data
     return JsonResponse(data)
 
 def GetSwap(request,server_pk):
-    data = []
+    swap_data = []
     swaps = models.Swap.objects.filter(server_id=server_pk)
-    swapdata = []
     for swap in swaps:
-        swapdata.append([swap.create_time.strftime('%Y-%m-%d %H:%M:%S'), swap.percent])
-
-    data.append('Swap')
-    data.append(swapdata)
-    linechart = LineCharts(data)
-
+        swap_data.append([get_time_stamp13(swap.create_time), float(swap.percent)])
     data = {}
     data['status'] = 'SUCCESS'
-    data['data'] = linechart
+    data['data'] = swap_data
     return JsonResponse(data)
 
-def GetDisk(request,server_pk):
-
-    disks = models.Disk.objects.filter(server_id=server_pk)
-    diskdata = []
-    for disk in disks:
-        diskdetail = models.DiskDetail.objects.filter(disk=disk).order_by('-create_time').first()
-        detail_list = []
-        detail_list.append(['已使用',float('%.2f' % float(diskdetail.percent))])
-        detail_list.append(['空闲', float('%.2f' % (100 - float(diskdetail.percent)))])
-        diskdata.append([disk.mountpoint,detail_list])
-    piechart = MutiplePieCharts(diskdata)
+def GetNetInfo(request,server_pk):
+    server = models.Server.objects.get(pk=server_pk)
     data = {}
     data['status'] = 'SUCCESS'
-    data['data'] = piechart
+    data['datas'] = GetNet(server)['datas']
     return JsonResponse(data)
 
 

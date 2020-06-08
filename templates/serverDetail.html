@@ -111,12 +111,6 @@
     {{ cpus }}
     {% if type == 'run' %}
         <div class="content-box-large">
-            <div class="panel-heading">
-    {#            <div class="panel-title">Morris.js Stacked</div>#}
-                <div class="panel-options">
-                    <a href="" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
-                </div>
-            </div>
             <div class="panel-body">
                 <div id="cpucontainer">
 
@@ -126,16 +120,25 @@
         <div class="content-box-large">
             <div class="panel-heading">
                 <div class="text-center" style="color:#333333;font-size:18px;fill:#333333;">磁盘使用率</div>
-                <div class="panel-options">
-                    <a href="javascript:" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
-                </div>
             </div>
             <div class="panel-body">
                 {% for diskdata in diskdatas %}
-                    <div id="{{ diskdata.device }}diskcontainer" class="pull-left">
+                    <div class="pull-left">
+                        <div id="{{ diskdata.mountpoint }}diskcontainer" class="pull-left">
+
+                        </div>
+                        <div class="pull-left">
+                            <ul class="list-group">
+                                <li class="list-group-item">盘&nbsp;&nbsp;&nbsp;&nbsp;符：{{ diskdata.mountpoint }}</li>
+                                <li class="list-group-item">总大小：{{ diskdata.disk.total }}G</li>
+                                <li class="list-group-item">已使用：{{ diskdata.disk.used }}G</li>
+                                <li class="list-group-item">空&nbsp;&nbsp;&nbsp;&nbsp;闲：{{ diskdata.disk.free }}G</li>
+                                <li class="list-group-item">使用率：{{ diskdata.disk.percent }}%</li>
+                            </ul>
+                        </div>
                     </div>
                     <script>
-                        var diskchart = Highcharts.chart('{{ diskdata.device }}diskcontainer', {
+                        var diskchart = Highcharts.chart('{{ diskdata.mountpoint }}diskcontainer', {
                             chart: {
                                 plotBackgroundColor: null,
                                 plotBorderWidth: null,
@@ -143,7 +146,7 @@
                                 type: 'pie'
                             },
                             title: {
-                                text: '{{ diskdata.device }}'
+                                text: null
                             },
                             tooltip: {
                                 useHTML: true,
@@ -161,16 +164,14 @@
                                         enabled: false
                                     },
                                     showInLegend: true,
-                                    size:200
-                                }
+                                },
                             },
                             series: [
-
-                                    {
-                                        name: "{{ diskdata.device }}",
-                                        colorByPoint: true,
-                                        data: {{ diskdata.detail_list|safe }}
-                                    },
+                                {
+                                    name: "{{ diskdata.device }}",
+                                    colorByPoint: true,
+                                    data: {{ diskdata.detail_list|safe }}
+                                },
                               ]
                         });
                     </script>
@@ -178,11 +179,6 @@
             </div>
         </div>
         <div class="content-box-large">
-            <div class="panel-heading">
-                <div class="panel-options">
-                    <a href="javascript:getNet()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
-                </div>
-            </div>
             <div class="panel-body">
                 <div id="netcontainer">
 
@@ -221,121 +217,168 @@
                 chart.tooltip.refresh(points[points.length -1]);
             }
             $(function(){
-                // 开启定时任务，时间间隔为3000 ms。
+                var chart = Highcharts.chart('cpucontainer', {
+                    chart: {
+                        zoomType: 'x',
+                        events: {
+                            load: function () {
+
+                            }
+                        }
+                    },
+                    legend: {
+                        layout: 'horizontal',
+                        align: 'center',
+                    },
+                    title: {
+                        text: '操作系统基础指标',
+                    },
+                    subtitle: {
+                        text: document.ontouchstart === undefined ?
+                        '鼠标拖动可以进行缩放' : '手势操作进行缩放'
+                    },
+                    xAxis: {
+                        type:'datetime',
+                        //categories: {{ cpus.create_time }},
+                        labels: {
+                            formatter: function () {
+                                return getLocalTime(this.value);
+                            }
+                        }
+                    },
+                    yAxis:{
+                        title: {
+                            text: null
+                        },
+                        labels: {
+                            formatter: function () {
+                                return this.value + "%";
+                            }
+                        },
+                        max:100,
+                    },
+                    tooltip: {
+                        shared: true,
+                        useHTML: true,
+                        dateTimeLabelFormats: {
+                            day: '%Y-%m-%d %H:%M:%S',
+                            millisecond: '%Y-%m-%d %H:%M:%S',
+                            second: '%Y-%m-%d %H:%M:%S',
+                            minute: '%Y-%m-%d %H:%M:%S',
+                            hour: '%Y-%m-%d %H:%M:%S',
+                        },
+                        headerFormat: '<small>{point.key}</small><table>',
+                        pointFormat: '<tr><td style="color: {series.color}">{series.name}: </td>' +
+                        '<td style="text-align: right"><b>{point.y}%</b></td></tr>',
+                        footerFormat: '</table>',
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    series: [{
+                        name: 'CPU使用率',
+                        type:'area',
+                        data: {{ targets.cpu_percent_avg }}
+                    },{
+                        name: '内存使用率',
+                        type:'area',
+                        data: {{ targets.mem_percent_avg }}
+                    },{
+                        name: 'Swap使用率',
+                        type:'area',
+                        data: {{ targets.swap_percent_avg }}
+                    }]
+                });
+
+
+                var netchart = Highcharts.chart('netcontainer',{
+                    chart: {
+                        type: 'column'
+                    },
+                    title: {
+                        text: '网卡'
+                    },
+                    xAxis: {
+                        categories: {{ netdatas.ipaddrs|safe }},
+                        crosshair: true
+                    },
+                    yAxis: {
+                        min: 0,
+                        title: {
+                            text: null
+                        }
+                    },
+                    tooltip: {
+                        // head + 每个 point + footer 拼接成完整的 table
+                        headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                        pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                        '<td style="padding:0"><b>{point.y}</b></td></tr>',
+                        footerFormat: '</table>',
+                        shared: true,
+                        useHTML: true
+                    },
+                    plotOptions: {
+                        column: {
+                            borderWidth: 0
+                        }
+                    },
+                    series: [
+                        {% for data in netdatas.datas %}
+                            {
+                                name: '{{ data.name }}',
+                                data: {{ data.data|safe }}
+                            },
+                        {% endfor %}]
+                });
+                function getCpu(){
+                    //使用JQuery从后台获取JSON格式的数据
+                    jQuery.getJSON('{% url 'getcpu' server.pk %}', null, function(data) {//为图表设置值
+                        chart.series[0].setData(data['data']);
+                    });
+                }
+                function getMem(){
+                    //使用JQuery从后台获取JSON格式的数据
+                    jQuery.getJSON('{% url 'getmem' server.pk %}', null, function(data) {//为图表设置值
+                        chart.series[1].setData(data['data']);
+                    });
+                }
+                function getSwap(){
+                    //使用JQuery从后台获取JSON格式的数据
+                    jQuery.getJSON('{% url 'getswap' server.pk %}', null, function(data) {//为图表设置值
+                        chart.series[2].setData(data['data']);
+                    });
+                }
+                function getNet(){
+                    //使用JQuery从后台获取JSON格式的数据
+                    jQuery.getJSON('{% url 'getnet' server.pk %}', null, function(data) {//为图表设置值
+                        for (i = 0; i < data['datas'].length; i++) {
+                            netchart.series[i].setData(data['datas'][i]['data']);
+                         }
+                        //chart.series[2].setData(data['data']);
+                    });
+                }
+                function getTimes() {
+						// 生成随机值
+						var data = [],
+								time = (new Date()).getTime(),
+								i;
+						for (i = -19; i <= 0; i += 1) {
+								data.push({
+										x: time + i * 1000,
+										y: Math.random()
+								});
+						}
+						console.log(data)
+				}
                 setInterval(function(){
-                    var chart = Highcharts.chart('cpucontainer', {
-                        chart: {
-                            zoomType: 'x',
-                            events: {
-                                load: function () {
-
-                                }
-                            }
-                        },
-                        legend: {
-                            layout: 'horizontal',
-                            align: 'center',
-                        },
-                        title: {
-                            text: '操作系统基础指标',
-                        },
-                        subtitle: {
-                            text: document.ontouchstart === undefined ?
-                            '鼠标拖动可以进行缩放' : '手势操作进行缩放'
-                        },
-                        xAxis: {
-                            type:'datetime',
-                            //categories: {{ cpus.create_time }},
-                            labels: {
-                                formatter: function () {
-                                    return getLocalTime(this.value);
-                                }
-                            }
-                        },
-                        yAxis:{
-                            title: {
-                                text: null
-                            },
-                            labels: {
-                                formatter: function () {
-                                    return this.value + "%";
-                                }
-                            }
-                        },
-                        tooltip: {
-                            shared: true,
-                            useHTML: true,
-                            dateTimeLabelFormats: {
-                                day: '%Y-%m-%d %H:%M:%S',
-                                millisecond: '%Y-%m-%d %H:%M:%S',
-                                second: '%Y-%m-%d %H:%M:%S',
-                                minute: '%Y-%m-%d %H:%M:%S',
-                                hour: '%Y-%m-%d %H:%M:%S',
-                            },
-                            headerFormat: '<small>{point.key}</small><table>',
-                            pointFormat: '<tr><td style="color: {series.color}">{series.name}: </td>' +
-                            '<td style="text-align: right"><b>{point.y}%</b></td></tr>',
-                            footerFormat: '</table>',
-                        },
-                        credits: {
-                            enabled: false
-                        },
-                        series: [{
-                            name: 'CPU使用率',
-                            type:'area',
-                            data: {{ targets.cpu_percent_avg }}
-                        },{
-                            name: '内存使用率',
-                            type:'area',
-                            data: {{ targets.mem_percent_avg }}
-                        },{
-                            name: 'Swap使用率',
-                            type:'area',
-                            data: {{ targets.swap_percent_avg }}
-                        }]
-                    });
-
-
-                    var netchart = Highcharts.chart('netcontainer',{
-                        chart: {
-                            type: 'column'
-                        },
-                        title: {
-                            text: '网卡'
-                        },
-                        xAxis: {
-                            categories: {{ netdatas.ipaddrs|safe }},
-                            crosshair: true
-                        },
-                        yAxis: {
-                            min: 0,
-                            title: {
-                                text: null
-                            }
-                        },
-                        tooltip: {
-                            // head + 每个 point + footer 拼接成完整的 table
-                            headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
-                            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-                            '<td style="padding:0"><b>{point.y}</b></td></tr>',
-                            footerFormat: '</table>',
-                            shared: true,
-                            useHTML: true
-                        },
-                        plotOptions: {
-                            column: {
-                                borderWidth: 0
-                            }
-                        },
-                        series: [
-                            {% for data in netdatas.datas %}
-                                {
-                                    name: '{{ data.name }}',
-                                    data: {{ data.data|safe }}
-                                },
-                            {% endfor %}]
-                    });
+                    getCpu();
+                    getMem();
+                    getSwap();
+                    getNet();
                 }, 60000);
+                setInterval(function(){
+                    getTimes();
+                }, 1000);
             });
         {% endif %}
     </script>
