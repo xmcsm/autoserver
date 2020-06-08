@@ -198,13 +198,6 @@
     <script src="{% static 'js/tables.js' %}"></script>
     <script>
         {% if type == 'run' %}
-             function getNet()
-             {
-                $.get('{% url 'getnet' server.pk %}',function (data,status) {
-
-                    $('#divNet').html(data['data']);
-                });
-             }
 
             $(function(){
                 //getDisk();
@@ -214,7 +207,6 @@
                     getDisk();
                     getNet();
                 }, 60000);*/
-                console.log(getLocalTime(1591055760000))
             });
             function getLocalTime(nS) {
                var date = new Date(nS);
