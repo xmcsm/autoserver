@@ -108,57 +108,73 @@
 
         </div>
     </div>
+    {{ cpus }}
     {% if type == 'run' %}
         <div class="content-box-large">
             <div class="panel-heading">
     {#            <div class="panel-title">Morris.js Stacked</div>#}
                 <div class="panel-options">
-                    <a href="javascript:getCpu()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
+                    <a href="" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
                 </div>
             </div>
             <div class="panel-body">
-                <div id="cpusyl">
+                <div id="cpucontainer">
 
                 </div>
             </div>
         </div>
         <div class="content-box-large">
             <div class="panel-heading">
-    {#            <div class="panel-title">Morris.js Stacked</div>#}
+                <div class="text-center" style="color:#333333;font-size:18px;fill:#333333;">磁盘使用率</div>
                 <div class="panel-options">
-                    <a href="javascript:getMem()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
+                    <a href="javascript:" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
                 </div>
             </div>
             <div class="panel-body">
-                <div id="memsyl">
+                {% for diskdata in diskdatas %}
+                    <div id="{{ diskdata.device }}diskcontainer" class="pull-left">
+                    </div>
+                    <script>
+                        var diskchart = Highcharts.chart('{{ diskdata.device }}diskcontainer', {
+                            chart: {
+                                plotBackgroundColor: null,
+                                plotBorderWidth: null,
+                                plotShadow: false,
+                                type: 'pie'
+                            },
+                            title: {
+                                text: '{{ diskdata.device }}'
+                            },
+                            tooltip: {
+                                useHTML: true,
+                                headerFormat: null,
+                                pointFormat: '{point.name}: <b>{point.percentage:.1f}%</b>'
+                            },
+                            credits: {
+                                enabled: false
+                            },
+                            plotOptions: {
+                                pie: {
+                                    allowPointSelect: true,
+                                    cursor: 'pointer',
+                                    dataLabels: {
+                                        enabled: false
+                                    },
+                                    showInLegend: true,
+                                    size:200
+                                }
+                            },
+                            series: [
 
-                </div>
-            </div>
-        </div>
-        <div class="content-box-large">
-            <div class="panel-heading">
-    {#            <div class="panel-title">Morris.js Stacked</div>#}
-                <div class="panel-options">
-                    <a href="javascript:getSwap()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
-                </div>
-            </div>
-            <div class="panel-body">
-                <div id="swapsyl">
-
-                </div>
-            </div>
-        </div>
-        <div class="content-box-large">
-            <div class="panel-heading">
-    {#            <div class="panel-title">Morris.js Stacked</div>#}
-                <div class="panel-options">
-                    <a href="javascript:getDisk()" data-rel="collapse"><i class="glyphicon glyphicon-refresh"></i></a>
-                </div>
-            </div>
-            <div class="panel-body">
-                <div id="divDisk">
-
-                </div>
+                                    {
+                                        name: "{{ diskdata.device }}",
+                                        colorByPoint: true,
+                                        data: {{ diskdata.detail_list|safe }}
+                                    },
+                              ]
+                        });
+                    </script>
+                {% endfor %}
             </div>
         </div>
         <div class="content-box-large">
@@ -168,7 +184,7 @@
                 </div>
             </div>
             <div class="panel-body">
-                <div id="divNet">
+                <div id="netcontainer">
 
                 </div>
             </div>
@@ -182,52 +198,147 @@
     <script src="{% static 'js/tables.js' %}"></script>
     <script>
         {% if type == 'run' %}
-             function getCpu()
-             {
-                $.get('{% url 'getcpu' server.pk %}',function (data,status) {
-                    $('#cpusyl').html(data['data']);
-                });
-             }
-             function getMem()
-             {
-                $.get('{% url 'getmem' server.pk %}',function (data,status) {
-                    $('#memsyl').html(data['data']);
-                });
-             }
-             function getSwap()
-             {
-                $.get('{% url 'getswap' server.pk %}',function (data,status) {
-                    $('#swapsyl').html(data['data']);
-                });
-             }
-             function getDisk()
-             {
-                $.get('{% url 'getdisk' server.pk %}',function (data,status) {
-                    $('#divDisk').html(data['data']);
-                });
-             }
-             function getNet()
-             {
-                $.get('{% url 'getnet' server.pk %}',function (data,status) {
-
-                    $('#divNet').html(data['data']);
-                });
-             }
 
             $(function(){
-                getCpu();
-                getMem();
-                getSwap();
-                getDisk();
-                getNet();// 第一次加载数据
+                //getDisk();
+                //getNet();// 第一次加载数据
                 // 开启定时任务，时间间隔为3000 ms。
                 /*setInterval(function(){
-                    getCpu();
-                    getMem();
-                    getSwap();
                     getDisk();
                     getNet();
                 }, 60000);*/
+            });
+            function getLocalTime(nS) {
+               var date = new Date(nS);
+                Y = date.getFullYear() + '-';
+                M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
+                D = date.getDate() + ' ';
+                h = date.getHours() + ':';
+                m = date.getMinutes() + ':';
+                s = date.getSeconds();
+                return Y+M+D+h+m+s;
+            }
+            Highcharts.setOptions({
+                global: {
+                    // 时区调整，国内是 +8 时区
+                    timezoneOffset: -8 * 60
+                }
+            });
+            function activeLastPointToolip(chart) {
+                var points = chart.series[0].points;
+                chart.tooltip.refresh(points[points.length -1]);
+            }
+            var chart = Highcharts.chart('cpucontainer', {
+                chart: {
+                    zoomType: 'x',
+                    events: {
+						load: function () {
+
+						}
+				    }
+                },
+                legend: {
+                    layout: 'horizontal',
+                    align: 'center',
+                },
+                title: {
+                    text: '操作系统基础指标',
+                },
+                subtitle: {
+                    text: document.ontouchstart === undefined ?
+                    '鼠标拖动可以进行缩放' : '手势操作进行缩放'
+                },
+                xAxis: {
+                    type:'datetime',
+                    //categories: {{ cpus.create_time }},
+                    labels: {
+                        formatter: function () {
+                            return getLocalTime(this.value);
+                        }
+                    }
+                },
+                yAxis:{
+                    title: {
+                        text: null
+                    },
+                    labels: {
+                        formatter: function () {
+                            return this.value + "%";
+                        }
+                    }
+                },
+                tooltip: {
+                    shared: true,
+                    useHTML: true,
+                    dateTimeLabelFormats: {
+                        day: '%Y-%m-%d %H:%M:%S',
+                        millisecond: '%Y-%m-%d %H:%M:%S',
+                        second: '%Y-%m-%d %H:%M:%S',
+                        minute: '%Y-%m-%d %H:%M:%S',
+                        hour: '%Y-%m-%d %H:%M:%S',
+                    },
+                    headerFormat: '<small>{point.key}</small><table>',
+                    pointFormat: '<tr><td style="color: {series.color}">{series.name}: </td>' +
+                    '<td style="text-align: right"><b>{point.y}%</b></td></tr>',
+                    footerFormat: '</table>',
+                },
+                credits: {
+                    enabled: false
+                },
+                series: [{
+                    name: 'CPU使用率',
+                    type:'area',
+                    data: {{ targets.cpu_percent_avg }}
+                },{
+                    name: '内存使用率',
+                    type:'area',
+                    data: {{ targets.mem_percent_avg }}
+                },{
+                    name: 'Swap使用率',
+                    type:'area',
+                    data: {{ targets.swap_percent_avg }}
+                }]
+            });
+
+
+            var netchart = Highcharts.chart('netcontainer',{
+                chart: {
+                    type: 'column'
+                },
+                title: {
+                    text: '网卡'
+                },
+                xAxis: {
+                    categories: {{ netdatas.ipaddrs|safe }},
+                    crosshair: true
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: null
+                    }
+                },
+                tooltip: {
+                    // head + 每个 point + footer 拼接成完整的 table
+                    headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                    pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y}</b></td></tr>',
+                    footerFormat: '</table>',
+                    shared: true,
+                    useHTML: true
+                },
+                plotOptions: {
+                    column: {
+                        borderWidth: 0
+                    }
+                },
+                series: [
+                    {% for data in netdatas.datas %}
+                        {
+                            name: '{{ data.name }}',
+                            data: {{ data.data|safe }}
+                        },
+                    {% endfor %}]
             });
         {% endif %}
     </script>

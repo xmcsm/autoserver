@@ -8,10 +8,28 @@ from respository import models
 def login(request):
     return render(request,'login.html')
 
+def GetNet(server):
+    data = {}
+    nets = models.Net.objects.filter(server=server)
+    bytes_sent_list = []
+    bytes_recv_list = []
+    packets_sent_list = []
+    packets_recv_list = []
+    x_list = []
+    for net in nets:
+        x_list.append(net.address)
+        bytes_sent_list.append(int(net.bytes_sent))
+        bytes_recv_list.append(int(net.bytes_recv))
+        packets_sent_list.append(int(net.packets_sent))
+        packets_recv_list.append(int(net.packets_recv))
+    data['ipaddrs'] = x_list
+    data['datas'] = [{'name':'已发送字节数','data':bytes_sent_list},{'name':'已接收字节数','data':bytes_recv_list},{'name':'已发送包数','data':packets_sent_list},{'name':'已接收包数','data':packets_recv_list}]
+    return data
 
 def server(request):
     context = {}
     servers = models.Server.objects.exclude(device_status_id=2)
+
     context['servers'] = servers
     return render(request,'server.html',context)
 
@@ -25,9 +43,51 @@ def serverdetail(request,pk,type):
     context = {}
     server = models.Server.objects.get(pk=pk)
     nets = models.Net.objects.filter(server_id=pk)
+    cpus = models.Cpu.objects.filter(server=server)
+    data = {}
+    cpu_data = []
+    for cpu in cpus:
+        cpu_data.append([get_time_stamp13(cpu.create_time),float(cpu.percent_avg)])
+    mem_data = []
+    mems = models.Mem.objects.filter(server=server)
+    for mem in mems:
+        mem_data.append([get_time_stamp13(mem.create_time),float(mem.percent)])
+
+    swap_data = []
+    swaps = models.Swap.objects.filter(server=server)
+    for swap in swaps:
+        swap_data.append([get_time_stamp13(swap.create_time), float(swap.percent)])
+
+    data['cpu_percent_avg'] = cpu_data
+    data['mem_percent_avg'] = mem_data
+    data['swap_percent_avg'] = swap_data
+
+    disks = models.Disk.objects.filter(server=server)
+    diskdata = []
+    row = 0
+    col = 0
+    row_num = 100
+    col_num = 100
+    interval_num = 300
+    for disk in disks:
+        diskdetail = models.DiskDetail.objects.filter(disk=disk).order_by('-create_time').first()
+        detail_list = []
+        detail_list.append(['已使用', float('%.2f' % float(diskdetail.percent))])
+        detail_list.append(['空闲', float('%.2f' % (100 - float(diskdetail.percent)))])
+        center = [col_num+(interval_num*col),row_num+(interval_num*row)]
+        diskdata.append({'device':str(disk.device.replace('\\','/')),'center':center, 'detail_list':detail_list})
+        if col == 2:
+            col = 0
+            row += 1
+        else:
+            col += 1
+    print(diskdata)
     context['server'] = server
     context['nets'] = nets
     context['type'] = type
+    context['targets'] = data
+    context['diskdatas'] = diskdata
+    context['netdatas'] = GetNet(server)
     return render(request,'serverDetail.html',context)
 
 def GetCpu(request,server_pk):
@@ -131,29 +191,6 @@ def GetDisk(request,server_pk):
     data['data'] = piechart
     return JsonResponse(data)
 
-def GetNet(request,server_pk):
-    data = []
-    nets = models.Net.objects.filter(server_id=server_pk)
-    bytes_sent_list = []
-    bytes_recv_list = []
-    packets_sent_list = []
-    packets_recv_list = []
-    x_list = []
-    for net in nets:
-        x_list.append(net.address)
-        bytes_sent_list.append(net.bytes_sent)
-        bytes_recv_list.append(net.bytes_recv)
-        packets_sent_list.append(net.packets_sent)
-        packets_recv_list.append(net.packets_recv)
 
-    data.append('网卡IO信息')
-    data.append(x_list)
-    data.append([['已发送字节数',bytes_sent_list],['已接收字节数',bytes_recv_list],['已发送包数',packets_sent_list],['已接收包数',packets_recv_list]])
-
-    barcharts = BarCharts(data)
-    data = {}
-    data['status'] = 'SUCCESS'
-    data['data'] = barcharts
-    return JsonResponse(data)
 
 
