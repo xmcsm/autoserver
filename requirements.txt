@@ -1,6 +1,6 @@
 Django==2.2.12
 django-suit2==2.0a1
-Jinja2==2.11.2
+Jinja2==2.11.3
 MarkupSafe==1.1.1
 mysqlclient==1.4.6
 prettytable==0.7.2
